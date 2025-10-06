@@ -15,13 +15,6 @@
             font-family: 'Inter', sans-serif;
             background-color: #f7fdee; /* हल्का हरा/ऑफ-व्हाइट बैकग्राउंड */
         }
-        /* हीरो सेक्शन के लिए विशेष बैकग्राउंड */
-        .hero-bg {
-            /* हाई-क्वालिटी खेती का बैकग्राउंड इमेज */
-            background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.6)), url('https://images.unsplash.com/photo-1542601905-2313d460e927?q=80&w=2670&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
-            background-size: cover;
-            background-position: center;
-        }
         /* AI आउटपुट कंटेनर के लिए एनिमेशन */
         .ai-output-enter {
             opacity: 0;
@@ -194,14 +187,11 @@
     <!-- Header / Navigation Bar -->
     <header class="bg-white shadow-md sticky top-0 z-10">
         <div class="container mx-auto px-4 py-3 flex justify-between items-center max-w-7xl">
-            <!-- Logo (Using User's Uploaded Image) -->
+            <!-- Logo (Reverted to Icon and Text only) -->
             <h1 class="flex items-center">
-                <!-- User's Logo Image -->
-                <img src="uploaded:WhatsApp Image 2025-10-06 at 12.11.18_7a132ab0.jpg-0544194f-55d7-4ede-bb47-24a85ccfd432" 
-                     alt="Shivgauri Agro Logo" 
-                     class="h-10 md:h-12 w-auto mr-3 object-contain">
-                <!-- Text Title (Optional on mobile if logo is clear) -->
-                <span class="text-xl md:text-2xl font-extrabold text-green-700 hidden sm:inline">शिवगौरी एग्रो</span>
+                <i data-lucide="leaf" class="w-8 h-8 text-green-700 mr-2"></i>
+                <!-- Text Title -->
+                <span class="text-xl md:text-2xl font-extrabold text-green-700">शिवगौरी एग्रो</span>
             </h1>
             
             <!-- Desktop Navigation -->
@@ -231,8 +221,8 @@
 
     <main>
         
-        <!-- 1. Hero Section (Home) -->
-        <section id="home" class="hero-bg text-white text-center py-20 md:py-32 rounded-b-xl shadow-lg">
+        <!-- 1. Hero Section (Home) - Background Image Removed -->
+        <section id="home" class="bg-lime-600 text-white text-center py-20 md:py-32 rounded-b-xl shadow-lg">
             <div class="container mx-auto px-6 max-w-4xl">
                 <h2 class="text-4xl md:text-6xl font-extrabold mb-4 leading-tight">
                     आपके खेत की प्रगति, हमारी जिम्मेदारी।
