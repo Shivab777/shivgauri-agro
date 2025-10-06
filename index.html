@@ -306,21 +306,23 @@
         document.addEventListener('DOMContentLoaded', checkFirstVisit);
 
 
-        // --- Gemini API Logic for AI Section (Copied from previous file) ---
-        const apiKey = ""; 
+        // --- Gemini API Logic for AI Section (FIXED FOR BETTER RELIABILITY) ---
+        const apiKey = ""; // API key is provided by the environment
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
         const MAX_RETRIES = 5;
 
+        // Exponential backoff for reliable API calls
         async function exponentialBackoff(func, retries = 0) {
             try {
                 return await func();
             } catch (error) {
                 if (retries < MAX_RETRIES) {
                     const delay = Math.pow(2, retries) * 1000 + Math.random() * 1000;
+                    console.warn(`[GEMINI API] Retrying in ${delay / 1000}s. Attempt: ${retries + 1}`);
                     await new Promise(resolve => setTimeout(resolve, delay));
                     return exponentialBackoff(func, retries + 1);
                 } else {
-                    console.error("Max retries reached. Failed to fetch from API.", error);
+                    console.error("[GEMINI API] Max retries reached. Final Error:", error);
                     throw new Error("API request failed after multiple retries.");
                 }
             }
@@ -342,6 +344,7 @@
                 return;
             }
 
+            // Set UI to loading state
             adviceButton.disabled = true;
             loadingIcon.classList.remove('hidden');
             aiResultContainer.classList.add('hidden');
@@ -365,7 +368,9 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
+                console.log(`[GEMINI API] Response Status: ${response.status}`);
                 if (!response.ok) {
+                    // Throw error to trigger retry logic
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 return response.json();
@@ -373,6 +378,7 @@
 
             try {
                 const result = await exponentialBackoff(fetchFunc);
+                console.log("[GEMINI API] Successful Response:", result);
                 const candidate = result.candidates?.[0];
 
                 if (candidate && candidate.content?.parts?.[0]?.text) {
@@ -402,23 +408,31 @@
                     }
 
                 } else {
-                    aiResponseDiv.textContent = 'क्षमा करें, AI विशेषज्ञ इस समस्या का निदान नहीं कर पाया या जवाब फ़िल्टर हो गया। कृपया हमें सीधे कॉल करें।';
+                    // Added more descriptive feedback if content is filtered/empty
+                    const blockReason = candidate?.finishReason || "UNKNOWN";
+                    if (blockReason !== "STOP" && blockReason !== "SAFETY") {
+                         aiResponseDiv.textContent = `क्षमा करें, AI विशेषज्ञ इस समस्या का निदान नहीं कर पाया। (कारण: ${blockReason}) कृपया हमें सीधे कॉल करें।`;
+                    } else {
+                         aiResponseDiv.textContent = 'क्षमा करें, AI विशेषज्ञ इस समस्या का निदान नहीं कर पाया या जवाब फ़िल्टर हो गया। कृपया अपनी समस्या को सरल भाषा में दोबारा लिखें या हमें सीधे कॉल करें।';
+                    }
                     aiSourcesDiv.textContent = '';
                 }
 
                 aiResultContainer.classList.remove('hidden');
 
             } catch (error) {
-                aiResponseDiv.textContent = '❌ सलाह जनरेट करते समय एक गंभीर त्रुटि हुई। कृपया थोड़ी देर बाद पुनः प्रयास करें या हमें सीधे कॉल करें।';
+                // Handle total failure after retries
+                aiResponseDiv.textContent = '❌ सलाह जनरेट करते समय एक गंभीर त्रुटि हुई। (नेटवर्क/API विफल) कृपया थोड़ी देर बाद पुनः प्रयास करें या हमें सीधे कॉल करें।';
                 aiSourcesDiv.textContent = '';
                 aiResultContainer.classList.remove('hidden');
                 console.error("AI Generation Critical Error:", error);
             } finally {
+                // Ensure UI is restored regardless of success or failure
                 adviceButton.disabled = false;
                 loadingIcon.classList.add('hidden');
             }
         }
-        window.generateAdvice = generateAdvice;
+        window.generateAdvice = generateAdvice; // Make it globally accessible
 
     </script>
 </body>
