@@ -179,7 +179,6 @@
                 <p class="text-center text-lg text-gray-600 mb-12">कृपया यह फ़ॉर्म भरें, और हम जल्द ही आपसे संपर्क करेंगे।</p>
 
                 <div id="contact-form" class="bg-gray-50 p-6 sm:p-10 rounded-xl shadow-2xl border border-gray-100">
-                    <!-- Form now handles submission via Firestore instead of Formspree -->
                     <form id="contactForm" onsubmit="handleSubmit(event)">
                         
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -208,13 +207,13 @@
                             <textarea id="message" name="Message" rows="4" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-agro-green focus:border-agro-green"></textarea>
                         </div>
 
-                        <button type="submit" id="submitButton" class="mt-8 w-full py-3 bg-agro-green text-white font-bold text-lg rounded-lg shadow-md hover:bg-green-700 transition duration-300">
+                        <button type="submit" id="submitButton" class="mt-8 w-full py-3 bg-agro-green text-white font-bold text-lg rounded-lg shadow-md hover:bg-green-700 transition duration-300 disabled:opacity-50">
                             पूछताछ सबमिट करें और सेव करें
                         </button>
                     </form>
                     
                     <!-- Dynamic Status Message Area -->
-                    <div id="formStatus" class="mt-4 hidden"></div>
+                    <div id="formStatus" class="mt-4"></div>
 
                 </div>
             </div>
@@ -259,6 +258,16 @@
         let db;
         let auth;
         let userId = null;
+        let isAuthReady = false; // NEW: State variable to track readiness
+
+        // Get references to UI elements outside the functions
+        const formStatusDiv = document.getElementById('formStatus');
+        const submitButton = document.getElementById('submitButton');
+        
+        // Initial UI state setup
+        formStatusDiv.classList.add('p-3', 'bg-yellow-100', 'text-agro-dark', 'rounded-lg', 'border-l-4', 'border-agro-yellow', 'font-semibold');
+        formStatusDiv.innerHTML = '🌐 **प्रारंभ हो रहा है:** डेटाबेस लोड किया जा रहा है... कृपया 5 सेकंड प्रतीक्षा करें।';
+        submitButton.disabled = true; // Disable button until ready
 
         // Initialize Firebase and Authenticate
         try {
@@ -278,16 +287,29 @@
             onAuthStateChanged(auth, (user) => {
                 if (user) {
                     userId = user.uid;
+                    isAuthReady = true; // Set ready state on successful auth
                     console.log("Firebase Authenticated. User ID:", userId);
+                    
+                    // Update UI state to success
+                    formStatusDiv.classList.remove('bg-yellow-100', 'border-agro-yellow', 'text-agro-dark');
+                    formStatusDiv.classList.add('bg-green-100', 'border-agro-green', 'text-agro-green');
+                    formStatusDiv.innerHTML = '✅ **तैयार:** फ़ॉर्म सबमिट करने के लिए तैयार है।';
+                    submitButton.disabled = false;
+
                     // Start listening for submissions once authenticated
                     setupSubmissionListener();
                 } else {
-                    console.log("No user signed in.");
+                    console.log("No user signed in (Anonymous or failed).");
+                    // If auth fails for any reason, isAuthReady remains false, keeping the button disabled.
                 }
             });
 
         } catch(e) {
             console.error("Firebase initialization failed:", e);
+            // Update UI state to error
+            formStatusDiv.classList.remove('bg-yellow-100', 'border-agro-yellow');
+            formStatusDiv.classList.add('p-3', 'bg-red-100', 'text-red-700', 'rounded-lg', 'border-l-4', 'border-red-600', 'font-semibold');
+            formStatusDiv.innerHTML = '❌ **गंभीर त्रुटि:** Firebase लोड नहीं हो पाया। कृपया कंसोल देखें।';
         }
 
         // --- Firestore Specifics ---
@@ -344,7 +366,7 @@
         }
 
 
-        // --- Gemini API Logic (Unchanged but included for completeness) ---
+        // --- Gemini API Logic (Unchanged) ---
         const apiKey = ""; // API key is provided by the environment
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
         const MAX_RETRIES = 5;
@@ -451,7 +473,6 @@
                 aiResultContainer.classList.remove('hidden');
             } finally {
                 adviceButton.disabled = false;
-                loadingIcon.classList.add('hidden');
             }
         }
         window.generateAdvice = generateAdvice; // Make it globally accessible
@@ -464,22 +485,21 @@
         async function handleSubmit(event) {
             event.preventDefault();
             
-            if (!db) {
-                const statusDiv = document.getElementById('formStatus');
-                statusDiv.classList.remove('hidden');
-                statusDiv.classList.add('p-3', 'bg-red-100', 'text-red-700', 'rounded-lg', 'border-l-4', 'border-red-600', 'font-semibold');
-                statusDiv.innerHTML = '❌ **त्रुटि:** डेटाबेस अभी लोड नहीं हो पाया है। कृपया पेज रीफ़्रेश करें।';
+            // CRITICAL FIX: Check if the database and auth are ready
+            if (!isAuthReady || !db || !userId) { 
+                formStatusDiv.classList.remove('bg-green-100', 'border-agro-green');
+                formStatusDiv.classList.add('p-3', 'bg-red-100', 'text-red-700', 'rounded-lg', 'border-l-4', 'border-red-600', 'font-semibold');
+                formStatusDiv.innerHTML = '❌ **त्रुटि:** डेटाबेस लोड हो रहा है, कृपया **5 सेकंड प्रतीक्षा करें** और फिर से प्रयास करें।';
                 return;
             }
 
             const form = event.target;
-            const statusDiv = document.getElementById('formStatus');
-            const submitButton = document.getElementById('submitButton');
             
             submitButton.disabled = true;
-            statusDiv.classList.remove('hidden', 'bg-red-100', 'bg-green-100');
-            statusDiv.classList.add('p-3', 'bg-yellow-100', 'text-agro-dark', 'rounded-lg', 'border-l-4', 'border-agro-yellow', 'font-semibold');
-            statusDiv.innerHTML = 'फ़ॉर्म डेटाबेस में सेव किया जा रहा है...';
+            // Clear previous status style and add loading style
+            formStatusDiv.classList.remove('bg-red-100', 'bg-green-100', 'border-red-600', 'border-agro-green', 'text-agro-green');
+            formStatusDiv.classList.add('p-3', 'bg-yellow-100', 'text-agro-dark', 'rounded-lg', 'border-l-4', 'border-agro-yellow', 'font-semibold');
+            formStatusDiv.innerHTML = '⏳ **प्रक्रिया में:** फ़ॉर्म डेटाबेस में सेव किया जा रहा है...';
 
             const data = {
                 Name: form.Name.value,
@@ -494,13 +514,13 @@
             try {
                 const docRef = await addDoc(collection(db, SUBMISSIONS_COLLECTION_PATH), data);
 
-                statusDiv.classList.remove('bg-yellow-100', 'border-agro-yellow', 'border-red-600');
-                statusDiv.classList.add('bg-green-100', 'border-agro-green');
+                statusDiv.classList.remove('bg-yellow-100', 'border-agro-yellow', 'text-agro-dark');
+                statusDiv.classList.add('bg-green-100', 'border-agro-green', 'text-agro-green');
                 statusDiv.innerHTML = `✅ **सफलता!** आपकी पूछताछ डेटाबेस में **सुरक्षित रूप से सेव** हो गई है। रिकॉर्ड ID: ${docRef.id}`;
                 form.reset(); // Clear the form on success
             } catch (error) {
-                statusDiv.classList.remove('bg-yellow-100', 'border-agro-yellow', 'border-agro-green');
-                statusDiv.classList.add('bg-red-100', 'border-red-600');
+                statusDiv.classList.remove('bg-yellow-100', 'border-agro-yellow', 'bg-green-100', 'border-agro-green', 'text-agro-green');
+                statusDiv.classList.add('bg-red-100', 'border-red-600', 'text-red-700');
                 statusDiv.innerHTML = `❌ **त्रुटि:** डेटा सेव नहीं हो पाया। समस्या: ${error.message} कृपया सीधे **8625830898** पर कॉल करें।`;
                 console.error("Firestore Error:", error);
             } finally {
