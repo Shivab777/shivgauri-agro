@@ -95,7 +95,7 @@
                     <div class="bg-yellow-50 border-t-4 border-agro-yellow p-6 sm:p-8 rounded-xl shadow-lg hover:shadow-xl transition duration-300">
                         <div class="flex items-center mb-4">
                             <div class="bg-agro-yellow/10 p-3 rounded-full mr-4">
-                                <svg class="w-8 h-8 text-agro-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.828 0l-4.243-4.243m12.424-1.414l-4.242 4.242m-4.242-4.242L10.985 13.985a1.998 1.998 0 002.828 0l4.242-4.242m-12.424 0L10.985 6.985a1.998 1.998 0 012.828 0l4.242 4.242M12 21a9 9 0 100-18 9 9 0 000 18z"></path></svg>
+                                <svg class="w-8 h-8 text-agro-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.828 0l-4.243-4.243m12.424-1.414l-4.242 4.242m-4.242-4.242L10.985 13.985a1.998 1.998 0 002.828 0l4.242-4.242M12 21a9 9 0 100-18 9 9 0 000 18z"></path></svg>
                             </div>
                             <h4 class="text-2xl font-bold text-agro-dark">सशुल्क ऑन-साइट विज़िट</h4>
                         </div>
@@ -179,35 +179,53 @@
                 <p class="text-center text-lg text-gray-600 mb-12">कृपया यह फ़ॉर्म भरें, और हम जल्द ही आपसे संपर्क करेंगे।</p>
 
                 <div id="contact-form" class="bg-gray-50 p-6 sm:p-10 rounded-xl shadow-2xl border border-gray-100">
-                    <form onsubmit="handleSubmit(event)">
+                    <!-- Form updated to use the provided Formspree Endpoint -->
+                    <form action="https://formspree.io/f/mldplown" method="POST" target="_blank">
+                        
+                        <!-- Honeypot field for spam prevention (Formspree recommendation) -->
+                        <input type="text" name="_gotcha" style="display:none" />
+
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div class="space-y-2">
                                 <label for="name" class="block text-sm font-medium text-gray-700">आपका नाम</label>
-                                <input type="text" id="name" name="name" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-agro-green focus:border-agro-green">
+                                <!-- Formspree uses the 'name' attribute to label the data -->
+                                <input type="text" id="name" name="Name" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-agro-green focus:border-agro-green">
                             </div>
                             <div class="space-y-2">
                                 <label for="phone" class="block text-sm font-medium text-gray-700">फ़ोन नंबर</label>
-                                <input type="tel" id="phone" name="phone" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-agro-green focus:border-agro-green">
+                                <input type="tel" id="phone" name="Phone" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-agro-green focus:border-agro-green">
                             </div>
+                        </div>
+
+                        <div class="mt-6 space-y-2">
+                            <label for="email" class="block text-sm font-medium text-gray-700">ईमेल (वैकल्पिक)</label>
+                            <!-- Adding email field for better contact options and Formspree use -->
+                            <input type="email" id="email" name="Email" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-agro-green focus:border-agro-green">
                         </div>
 
                         <div class="mt-6 space-y-2">
                             <label for="location" class="block text-sm font-medium text-gray-700">खेत का स्थान (राज्य और जिला)</label>
-                            <input type="text" id="location" name="location" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-agro-green focus:border-agro-green">
+                            <input type="text" id="location" name="Location" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-agro-green focus:border-agro-green">
                         </div>
 
                         <div class="mt-6 space-y-2">
                             <label for="message" class="block text-sm font-medium text-gray-700">आप किस चीज़ पर सलाह चाहते हैं?</label>
-                            <textarea id="message" name="message" rows="4" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-agro-green focus:border-agro-green"></textarea>
+                            <textarea id="message" name="Message" rows="4" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-agro-green focus:border-agro-green"></textarea>
                         </div>
 
                         <button type="submit" class="mt-8 w-full py-3 bg-agro-green text-white font-bold text-lg rounded-lg shadow-md hover:bg-green-700 transition duration-300">
                             पूछताछ सबमिट करें
                         </button>
 
-                        <!-- Message Box for Submission Status -->
-                        <div id="statusMessage" class="mt-4 p-3 bg-blue-100 text-blue-700 rounded-lg hidden"></div>
+                        <!-- The status message div is no longer needed as Formspree handles the confirmation page -->
                     </form>
+                    
+                    <div class="mt-4 p-3 bg-green-100 text-agro-dark rounded-lg border-l-4 border-agro-green">
+                        <p class="text-sm font-semibold">
+                            ✅ **सफलता:** फ़ॉर्म अब **https://formspree.io/f/mldplown** पर सबमिट होगा। आपको अपने ईमेल पर सूचना मिलेगी।
+                        </p>
+                    </div>
+
                 </div>
             </div>
         </section>
@@ -226,6 +244,12 @@
 
     <!-- JavaScript for Form Submission and Gemini API -->
     <script>
+        // --- Formspree Setup Guide ---
+        /*
+           Formspree URL: https://formspree.io/f/mldplown
+           जब कोई फ़ॉर्म भरता है, तो डेटा आपके Formspree खाते से जुड़े ईमेल पर आता है और उनके डैशबोर्ड में सेव हो जाता है।
+        */
+
         // --- Constants for Gemini API ---
         const apiKey = ""; // API key is provided by the environment
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
@@ -344,21 +368,7 @@
             }
         }
 
-
-        // Simple JavaScript for On-Site Form Submission Message
-        function handleSubmit(event) {
-            event.preventDefault();
-            const form = event.target;
-            const name = document.getElementById('name').value;
-            const statusMessage = document.getElementById('statusMessage');
-
-            // Simulate form submission success
-            statusMessage.textContent = `धन्यवाद, ${name} जी! आपकी पूछताछ सफलतापूर्वक प्राप्त हो गई है। हम 24 घंटे के भीतर आपसे संपर्क करेंगे।`;
-            statusMessage.classList.remove('hidden');
-            statusMessage.classList.remove('bg-red-100', 'text-red-700');
-            statusMessage.classList.add('bg-blue-100', 'text-blue-700');
-            form.reset();
-        }
+        // Removed the old handleSubmit function as Formspree handles submission directly.
     </script>
 </body>
 </html>
