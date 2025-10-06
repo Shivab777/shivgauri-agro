@@ -179,16 +179,12 @@
                 <p class="text-center text-lg text-gray-600 mb-12">कृपया यह फ़ॉर्म भरें, और हम जल्द ही आपसे संपर्क करेंगे।</p>
 
                 <div id="contact-form" class="bg-gray-50 p-6 sm:p-10 rounded-xl shadow-2xl border border-gray-100">
-                    <!-- Form updated to use the provided Formspree Endpoint and handled via AJAX -->
-                    <form id="contactForm" action="https://formspree.io/f/mldplown" method="POST" onsubmit="handleSubmit(event)">
+                    <!-- Form now handles submission via Firestore instead of Formspree -->
+                    <form id="contactForm" onsubmit="handleSubmit(event)">
                         
-                        <!-- Honeypot field for spam prevention (Formspree recommendation) -->
-                        <input type="text" name="_gotcha" style="display:none" />
-
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div class="space-y-2">
                                 <label for="name" class="block text-sm font-medium text-gray-700">आपका नाम</label>
-                                <!-- Formspree uses the 'name' attribute to label the data -->
                                 <input type="text" id="name" name="Name" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-agro-green focus:border-agro-green">
                             </div>
                             <div class="space-y-2">
@@ -199,7 +195,6 @@
 
                         <div class="mt-6 space-y-2">
                             <label for="email" class="block text-sm font-medium text-gray-700">ईमेल (वैकल्पिक)</label>
-                            <!-- Adding email field for better contact options and Formspree use -->
                             <input type="email" id="email" name="Email" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-agro-green focus:border-agro-green">
                         </div>
 
@@ -214,7 +209,7 @@
                         </div>
 
                         <button type="submit" id="submitButton" class="mt-8 w-full py-3 bg-agro-green text-white font-bold text-lg rounded-lg shadow-md hover:bg-green-700 transition duration-300">
-                            पूछताछ सबमिट करें
+                            पूछताछ सबमिट करें और सेव करें
                         </button>
                     </form>
                     
@@ -224,6 +219,19 @@
                 </div>
             </div>
         </section>
+
+        <!-- 6. Submissions Dashboard (NEW SECTION) -->
+        <section class="py-16 md:py-24 bg-gray-100" id="submissions">
+            <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+                <h3 class="text-3xl sm:text-4xl font-extrabold text-center mb-6">आपके सबमिशन (Database Records)</h3>
+                <p class="text-center text-gray-600 mb-8">यह पुष्टि करने के लिए है कि डेटा सीधे डेटाबेस में सेव हो रहा है।</p>
+                <div id="submissionsList" class="space-y-4">
+                    <!-- Submissions will be listed here -->
+                    <p class="text-center text-gray-500" id="loadingSubmissions">रिकॉर्ड लोड हो रहे हैं...</p>
+                </div>
+            </div>
+        </section>
+
     </main>
 
     <!-- Footer -->
@@ -231,26 +239,116 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-400">
             <p class="mb-2">© 2024 Shivgauri Agro. All rights reserved.</p>
             <p class="text-sm">
-                <!-- UPDATED EMAIL AND PHONE NUMBER HERE -->
                 ईमेल: <a href="mailto:gayatrisbairagi@gmail.com" class="text-agro-green hover:text-agro-yellow">gayatrisbairagi@gmail.com</a> | फ़ोन: <a href="tel:8625830898" class="text-agro-green hover:text-agro-yellow">8625830898</a>
             </p>
         </div>
     </footer>
 
-    <!-- JavaScript for Form Submission and Gemini API -->
-    <script>
-        // --- Formspree Setup Guide ---
-        /*
-           Formspree URL: https://formspree.io/f/mldplown
-           जब कोई फ़ॉर्म भरता है, तो डेटा आपके Formspree खाते से जुड़े ईमेल पर आता है और उनके डैशबोर्ड में सेव हो जाता है।
-        */
+    <!-- JavaScript for Firebase and Form Submission -->
+    <script type="module">
+        // Firebase Imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- Constants for Gemini API ---
+        // Global Firebase Variables (Mandatory environment variables)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        let db;
+        let auth;
+        let userId = null;
+
+        // Initialize Firebase and Authenticate
+        try {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            
+            if (initialAuthToken) {
+                signInWithCustomToken(auth, initialAuthToken).catch(e => {
+                    console.error("Custom token sign in failed, falling back to anonymous:", e);
+                    signInAnonymously(auth);
+                });
+            } else {
+                signInAnonymously(auth);
+            }
+
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    userId = user.uid;
+                    console.log("Firebase Authenticated. User ID:", userId);
+                    // Start listening for submissions once authenticated
+                    setupSubmissionListener();
+                } else {
+                    console.log("No user signed in.");
+                }
+            });
+
+        } catch(e) {
+            console.error("Firebase initialization failed:", e);
+        }
+
+        // --- Firestore Specifics ---
+        const SUBMISSIONS_COLLECTION_PATH = `/artifacts/${appId}/public/data/contact_submissions`;
+        
+        /**
+         * Sets up a real-time listener for the contact form submissions.
+         */
+        function setupSubmissionListener() {
+            if (!db) {
+                document.getElementById('loadingSubmissions').textContent = 'डेटाबेस उपलब्ध नहीं है।';
+                return;
+            }
+
+            const submissionsList = document.getElementById('submissionsList');
+            const submissionsRef = collection(db, SUBMISSIONS_COLLECTION_PATH);
+            
+            // NOTE: orderBy() is avoided as per instructions to prevent index issues. We will sort data in JS.
+            const q = query(submissionsRef);
+
+            onSnapshot(q, (snapshot) => {
+                submissionsList.innerHTML = '';
+                const submissions = [];
+                snapshot.forEach((doc) => {
+                    // Extract data and include the document ID and sort by timestamp
+                    submissions.push({ id: doc.id, ...doc.data() });
+                });
+                
+                // Sort submissions by time (newest first) in JavaScript
+                submissions.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+                if (submissions.length === 0) {
+                    submissionsList.innerHTML = '<p class="text-center text-gray-500 p-4 bg-white rounded-lg shadow-md">अभी कोई पूछताछ सेव नहीं हुई है।</p>';
+                    return;
+                }
+
+                submissions.forEach(submission => {
+                    const submissionTime = submission.timestamp ? new Date(submission.timestamp.seconds * 1000).toLocaleString('hi-IN', { timeZone: 'Asia/Kolkata' }) : 'Unknown Time';
+
+                    const item = document.createElement('div');
+                    item.className = 'bg-white p-4 rounded-xl shadow-md border-l-4 border-agro-green';
+                    item.innerHTML = `
+                        <p class="text-sm text-gray-500 mb-1">${submissionTime} को सबमिट किया गया</p>
+                        <p class="text-lg font-bold text-agro-dark">${submission.Name} (${submission.Phone})</p>
+                        <p class="text-md text-gray-700">स्थान: ${submission.Location}</p>
+                        <p class="text-sm text-gray-600 mt-2">संदेश: ${submission.Message.substring(0, 100)}...</p>
+                    `;
+                    submissionsList.appendChild(item);
+                });
+            }, (error) => {
+                console.error("Error setting up Firestore listener:", error);
+                submissionsList.innerHTML = `<p class="text-center text-red-500 p-4 bg-red-100 rounded-lg shadow-md">डेटा लोड करने में त्रुटि: ${error.message}</p>`;
+            });
+        }
+
+
+        // --- Gemini API Logic (Unchanged but included for completeness) ---
         const apiKey = ""; // API key is provided by the environment
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
         const MAX_RETRIES = 5;
 
-        // Utility function for exponential backoff
         async function exponentialBackoff(func, retries = 0) {
             try {
                 return await func();
@@ -266,9 +364,6 @@
             }
         }
 
-        /**
-         * Handles the click event to generate crop advice using the Gemini API.
-         */
         async function generateAdvice() {
             const queryTextarea = document.getElementById('crop_query');
             const adviceButton = document.getElementById('adviceButton');
@@ -285,7 +380,6 @@
                 return;
             }
 
-            // UI State: Loading
             adviceButton.disabled = true;
             loadingIcon.classList.remove('hidden');
             aiResultContainer.classList.add('hidden');
@@ -322,7 +416,6 @@
                     const text = candidate.content.parts[0].text;
                     aiResponseDiv.textContent = text;
                     
-                    // Extract and display grounding sources
                     let sourcesHtml = 'स्रोत: ';
                     let sources = [];
                     const groundingMetadata = candidate.groundingMetadata;
@@ -357,60 +450,65 @@
                 aiSourcesDiv.textContent = '';
                 aiResultContainer.classList.remove('hidden');
             } finally {
-                // UI State: Complete
                 adviceButton.disabled = false;
                 loadingIcon.classList.add('hidden');
             }
         }
+        window.generateAdvice = generateAdvice; // Make it globally accessible
 
+
+        // --- Firestore Form Submission Handler (Main Change) ---
         /**
-         * Handles the contact form submission using AJAX to prevent page refresh/redirect.
+         * Handles the contact form submission using Firestore to save the data.
          */
         async function handleSubmit(event) {
             event.preventDefault();
-            const form = document.getElementById('contactForm');
+            
+            if (!db) {
+                const statusDiv = document.getElementById('formStatus');
+                statusDiv.classList.remove('hidden');
+                statusDiv.classList.add('p-3', 'bg-red-100', 'text-red-700', 'rounded-lg', 'border-l-4', 'border-red-600', 'font-semibold');
+                statusDiv.innerHTML = '❌ **त्रुटि:** डेटाबेस अभी लोड नहीं हो पाया है। कृपया पेज रीफ़्रेश करें।';
+                return;
+            }
+
+            const form = event.target;
             const statusDiv = document.getElementById('formStatus');
             const submitButton = document.getElementById('submitButton');
             
             submitButton.disabled = true;
             statusDiv.classList.remove('hidden', 'bg-red-100', 'bg-green-100');
             statusDiv.classList.add('p-3', 'bg-yellow-100', 'text-agro-dark', 'rounded-lg', 'border-l-4', 'border-agro-yellow', 'font-semibold');
-            statusDiv.innerHTML = 'फ़ॉर्म भेजा जा रहा है...';
+            statusDiv.innerHTML = 'फ़ॉर्म डेटाबेस में सेव किया जा रहा है...';
 
-            const data = new FormData(form);
-            
+            const data = {
+                Name: form.Name.value,
+                Phone: form.Phone.value,
+                Email: form.Email.value,
+                Location: form.Location.value,
+                Message: form.Message.value,
+                timestamp: serverTimestamp(), // Record the time of submission
+                submittedByUserId: userId // Record the user who submitted (for security/tracking)
+            };
+
             try {
-                const response = await fetch(form.action, {
-                    method: form.method,
-                    body: data,
-                    headers: {
-                        'Accept': 'application/json' // Crucial for AJAX submission to Formspree
-                    }
-                });
+                const docRef = await addDoc(collection(db, SUBMISSIONS_COLLECTION_PATH), data);
 
-                if (response.ok) {
-                    statusDiv.classList.remove('bg-yellow-100', 'border-agro-yellow', 'border-red-600');
-                    statusDiv.classList.add('bg-green-100', 'border-agro-green');
-                    statusDiv.innerHTML = '✅ **सफलता!** आपकी पूछताछ भेज दी गई है। शिवगौरी एग्रो के विशेषज्ञ जल्द ही आपसे संपर्क करेंगे।';
-                    form.reset(); // Clear the form on success
-                } else {
-                    const errorData = await response.json();
-                    statusDiv.classList.remove('bg-yellow-100', 'border-agro-yellow', 'border-agro-green');
-                    statusDiv.classList.add('bg-red-100', 'border-red-600');
-                    // Check for specific Formspree errors if available, otherwise use a generic message
-                    const errorMessage = errorData.error ? errorData.error : 'फ़ॉर्म भेजने में कोई समस्या आई।';
-                    statusDiv.innerHTML = `❌ **त्रुटि:** ${errorMessage} कृपया सीधे **8625830898** पर कॉल करें।`;
-                    console.error("Formspree Error:", errorData);
-                }
+                statusDiv.classList.remove('bg-yellow-100', 'border-agro-yellow', 'border-red-600');
+                statusDiv.classList.add('bg-green-100', 'border-agro-green');
+                statusDiv.innerHTML = `✅ **सफलता!** आपकी पूछताछ डेटाबेस में **सुरक्षित रूप से सेव** हो गई है। रिकॉर्ड ID: ${docRef.id}`;
+                form.reset(); // Clear the form on success
             } catch (error) {
                 statusDiv.classList.remove('bg-yellow-100', 'border-agro-yellow', 'border-agro-green');
                 statusDiv.classList.add('bg-red-100', 'border-red-600');
-                statusDiv.innerHTML = '❌ **त्रुटि:** नेटवर्क समस्या के कारण फ़ॉर्म सबमिट नहीं हो पाया। कृपया अपना फ़ोन नंबर जाँचें या हमें सीधे कॉल करें।';
-                console.error("Fetch Error:", error);
+                statusDiv.innerHTML = `❌ **त्रुटि:** डेटा सेव नहीं हो पाया। समस्या: ${error.message} कृपया सीधे **8625830898** पर कॉल करें।`;
+                console.error("Firestore Error:", error);
             } finally {
                 submitButton.disabled = false;
             }
         }
+        window.handleSubmit = handleSubmit; // Make it globally accessible
+
     </script>
 </body>
 </html>
