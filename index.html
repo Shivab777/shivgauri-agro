@@ -17,7 +17,8 @@
         }
         /* हीरो सेक्शन के लिए विशेष बैकग्राउंड */
         .hero-bg {
-            background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.6)), url('https://placehold.co/1920x800/22c55e/ffffff?text=Farming+Field+Background');
+            /* हाई-क्वालिटी खेती का बैकग्राउंड इमेज */
+            background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.6)), url('https://images.unsplash.com/photo-1542601905-2313d460e927?q=80&w=2670&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
             background-size: cover;
             background-position: center;
         }
@@ -192,13 +193,15 @@
 
     <!-- Header / Navigation Bar -->
     <header class="bg-white shadow-md sticky top-0 z-10">
-        <div class="container mx-auto px-4 py-4 flex justify-between items-center max-w-7xl">
-            <!-- Logo/Title -->
-            <h1 class="text-2xl font-bold text-green-700">
-                <span class="inline-flex items-center">
-                    <i data-lucide="leaf" class="w-6 h-6 mr-2 text-lime-500"></i>
-                    शिवगौरी एग्रो
-                </span>
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center max-w-7xl">
+            <!-- Logo (Using User's Uploaded Image) -->
+            <h1 class="flex items-center">
+                <!-- User's Logo Image -->
+                <img src="uploaded:WhatsApp Image 2025-10-06 at 12.11.18_7a132ab0.jpg-0544194f-55d7-4ede-bb47-24a85ccfd432" 
+                     alt="Shivgauri Agro Logo" 
+                     class="h-10 md:h-12 w-auto mr-3 object-contain">
+                <!-- Text Title (Optional on mobile if logo is clear) -->
+                <span class="text-xl md:text-2xl font-extrabold text-green-700 hidden sm:inline">शिवगौरी एग्रो</span>
             </h1>
             
             <!-- Desktop Navigation -->
