@@ -306,7 +306,7 @@
         document.addEventListener('DOMContentLoaded', checkFirstVisit);
 
 
-        // --- Gemini API Logic for AI Section (FIXED FOR BETTER RELIABILITY) ---
+        // --- Gemini API Logic for AI Section (IMPROVED RELIABILITY AND LOGGING) ---
         const apiKey = ""; // API key is provided by the environment
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
         const MAX_RETRIES = 5;
@@ -347,8 +347,8 @@
             // Set UI to loading state
             adviceButton.disabled = true;
             loadingIcon.classList.remove('hidden');
-            aiResultContainer.classList.add('hidden');
-            aiResponseDiv.textContent = '💡 AI विशेषज्ञ सलाह जनरेट कर रहा है...';
+            aiResultContainer.classList.remove('hidden'); // Ensure container is visible to show loading/error
+            aiResponseDiv.innerHTML = '<p class="text-center animate-pulse">💡 AI विशेषज्ञ सलाह जनरेट कर रहा है... कृपया प्रतीक्षा करें।</p>';
             aiSourcesDiv.textContent = '';
 
 
@@ -363,22 +363,23 @@
             };
 
             const fetchFunc = async () => {
+                console.log("[GEMINI API] Sending request to API...");
                 const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                console.log(`[GEMINI API] Response Status: ${response.status}`);
+                console.log(`[GEMINI API] Response Status Received: ${response.status}`);
                 if (!response.ok) {
                     // Throw error to trigger retry logic
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
                 }
                 return response.json();
             };
 
             try {
                 const result = await exponentialBackoff(fetchFunc);
-                console.log("[GEMINI API] Successful Response:", result);
+                console.log("[GEMINI API] Successful Response Body:", result);
                 const candidate = result.candidates?.[0];
 
                 if (candidate && candidate.content?.parts?.[0]?.text) {
@@ -408,24 +409,35 @@
                     }
 
                 } else {
-                    // Added more descriptive feedback if content is filtered/empty
+                    // Handle blocked/empty response
                     const blockReason = candidate?.finishReason || "UNKNOWN";
-                    if (blockReason !== "STOP" && blockReason !== "SAFETY") {
-                         aiResponseDiv.textContent = `क्षमा करें, AI विशेषज्ञ इस समस्या का निदान नहीं कर पाया। (कारण: ${blockReason}) कृपया हमें सीधे कॉल करें।`;
-                    } else {
-                         aiResponseDiv.textContent = 'क्षमा करें, AI विशेषज्ञ इस समस्या का निदान नहीं कर पाया या जवाब फ़िल्टर हो गया। कृपया अपनी समस्या को सरल भाषा में दोबारा लिखें या हमें सीधे कॉल करें।';
-                    }
+                    console.warn(`[GEMINI API] Response was empty or blocked. Reason: ${blockReason}`);
+
+                    aiResponseDiv.innerHTML = `
+                        <p class="text-red-600 font-bold">⚠️ माफ़ करना, AI सलाह जनरेट नहीं कर पाया।</p>
+                        <p class="mt-2 text-sm">संभावित कारण:</p>
+                        <ul class="list-disc list-inside ml-4 text-sm">
+                            <li>आपका प्रश्न स्पष्ट नहीं था या बहुत जटिल था।</li>
+                            <li>आपका प्रश्न AI की सुरक्षा नीतियों के अंतर्गत फ़िल्टर हो गया (कोड: ${blockReason})।</li>
+                        </ul>
+                        <p class="mt-3 font-semibold">कृपया हमें सीधे <a href="tel:8625830898" class="text-agro-green font-bold hover:underline">8625830898</a> पर कॉल करें।</p>
+                    `;
                     aiSourcesDiv.textContent = '';
                 }
 
-                aiResultContainer.classList.remove('hidden');
-
             } catch (error) {
                 // Handle total failure after retries
-                aiResponseDiv.textContent = '❌ सलाह जनरेट करते समय एक गंभीर त्रुटि हुई। (नेटवर्क/API विफल) कृपया थोड़ी देर बाद पुनः प्रयास करें या हमें सीधे कॉल करें।';
+                console.error("AI Generation Critical Error (After Retries):", error);
+                aiResponseDiv.innerHTML = `
+                    <p class="text-red-600 font-bold">❌ माफ़ करना, AI सलाह जनरेट नहीं कर पाया।</p>
+                    <p class="mt-2 text-sm">संभावित कारण:</p>
+                    <ul class="list-disc list-inside ml-4 text-sm">
+                        <li>नेटवर्क कनेक्शन विफल रहा या API तक पहुँच ब्लॉक है।</li>
+                        <li>API की चाबी (Key) उपलब्ध नहीं है।</li>
+                    </ul>
+                    <p class="mt-3 font-semibold">कृपया हमें सीधे <a href="tel:8625830898" class="text-agro-green font-bold hover:underline">8625830898</a> पर कॉल करें।</p>
+                `;
                 aiSourcesDiv.textContent = '';
-                aiResultContainer.classList.remove('hidden');
-                console.error("AI Generation Critical Error:", error);
             } finally {
                 // Ensure UI is restored regardless of success or failure
                 adviceButton.disabled = false;
