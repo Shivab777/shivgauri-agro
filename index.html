@@ -40,9 +40,9 @@
                 class="h-10 sm:h-12 w-auto"
                 onerror="this.onerror=null; this.src='https://placehold.co/150x50/16A34A/ffffff?text=ShivGauri+Agro';"
             >
-            <!-- Primary CTA for Mobile/Desktop, now linking to the Google Form CTA section -->
-            <a href="#form-cta" class="px-4 py-2 bg-agro-green text-white font-semibold text-sm rounded-lg shadow-lg hover:bg-green-700 transition duration-300 transform hover:scale-105">
-                ऑन-साइट विज़िट
+            <!-- Primary CTA for Mobile/Desktop (Now links directly to Google Form) -->
+            <a href="https://forms.gle/qP81yKo2G9w7cP9z8" target="_blank" class="px-4 py-2 bg-agro-green text-white font-semibold text-sm rounded-lg shadow-lg hover:bg-green-700 transition duration-300 transform hover:scale-105">
+                ऑन-साइट विज़िट फॉर्म
             </a>
         </div>
     </header>
@@ -94,7 +94,7 @@
                         </a>
                     </div>
 
-                    <!-- Service Card 2: Paid On-Site Consultation (Now linking to the Google Form CTA) -->
+                    <!-- Service Card 2: Paid On-Site Consultation (Now links directly to Google Form) -->
                     <div class="bg-yellow-50 border-t-4 border-agro-yellow p-6 sm:p-8 rounded-xl shadow-lg hover:shadow-xl transition duration-300">
                         <div class="flex items-center mb-4">
                             <div class="bg-agro-yellow/10 p-3 rounded-full mr-4">
@@ -110,9 +110,9 @@
                             <li>फसल चक्र और उर्वरक की कस्टम योजना</li>
                             <li>खेत की उत्पादकता बढ़ाने के लिए व्यक्तिगत रिपोर्ट</li>
                         </ul>
-                        <!-- Link updated to the new form CTA section -->
-                        <a href="#form-cta" class="block w-full text-center py-3 bg-agro-dark text-white font-semibold rounded-lg hover:bg-gray-700 transition duration-300">
-                            ऑन-साइट विज़िट के लिए पूछताछ करें
+                        <!-- Link updated to direct Google Form URL -->
+                        <a href="https://forms.gle/qP81yKo2G9w7cP9z8" target="_blank" class="block w-full text-center py-3 bg-agro-dark text-white font-semibold rounded-lg hover:bg-gray-700 transition duration-300">
+                            ऑन-साइट विज़िट के लिए पूछताछ फॉर्म भरें
                         </a>
                     </div>
                 </div>
@@ -156,7 +156,7 @@
             </div>
         </section>
 
-        <!-- 4. About Us / Trust Section (Original 3) -->
+        <!-- 4. About Us / Trust Section -->
         <section class="py-16 md:py-24 bg-gray-100">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <h3 class="text-3xl sm:text-4xl font-extrabold text-center mb-12">हम कौन हैं: शिवगौरी एग्रो</h3>
@@ -176,7 +176,7 @@
             </div>
         </section>
 
-        <!-- NEW 5. Google Form CTA Section (Replaced old Contact/Submissions) -->
+        <!-- 5. Google Form CTA Section (Final call to action) -->
         <section id="form-cta" class="py-16 md:py-24 bg-white text-center">
             <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
                 <h3 class="text-3xl sm:text-4xl font-extrabold text-agro-dark mb-4">
@@ -186,7 +186,7 @@
                     गहन मिट्टी विश्लेषण, कस्टम फसल योजना, और फील्ड विजिट के लिए, कृपया नीचे दिए गए फ़ॉर्म को भरें।
                 </p>
 
-                <!-- Attractive New Button to Google Form -->
+                <!-- Attractive New Button to Google Form - Direct Link -->
                 <a 
                     href="https://forms.gle/qP81yKo2G9w7cP9z8" 
                     target="_blank" 
@@ -211,19 +211,21 @@
         </div>
     </footer>
 
-    <!-- JavaScript for Gemini AI Functionality (All Firebase code removed) -->
+    <!-- JavaScript for Gemini AI Functionality (AI Logic Fixed) -->
     <script type="module">
         // --- Gemini API Logic ---
         const apiKey = ""; // API key is provided by the environment
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
         const MAX_RETRIES = 5;
 
+        // Exponential backoff for reliable API calls
         async function exponentialBackoff(func, retries = 0) {
             try {
                 return await func();
             } catch (error) {
                 if (retries < MAX_RETRIES) {
                     const delay = Math.pow(2, retries) * 1000 + Math.random() * 1000;
+                    console.warn(`API call failed. Retrying in ${delay / 1000}s...`); // For internal debugging
                     await new Promise(resolve => setTimeout(resolve, delay));
                     return exponentialBackoff(func, retries + 1);
                 } else {
@@ -244,16 +246,18 @@
             const userQuery = queryTextarea.value.trim();
 
             if (!userQuery) {
-                aiResponseDiv.innerHTML = 'कृपया अपनी फसल और समस्या के बारे में लिखें।';
+                aiResponseDiv.textContent = 'कृपया अपनी फसल और समस्या के बारे में लिखें।';
                 aiResultContainer.classList.remove('hidden');
                 return;
             }
 
+            // Set UI to loading state
             adviceButton.disabled = true;
             loadingIcon.classList.remove('hidden');
             aiResultContainer.classList.add('hidden');
-            aiResponseDiv.textContent = '';
+            aiResponseDiv.textContent = '💡 AI विशेषज्ञ सलाह जनरेट कर रहा है...';
             aiSourcesDiv.textContent = '';
+
 
             const systemPrompt = "आप एक अनुभवी भारतीय कृषि सलाहकार हैं जो किसानों को हिंदी में सरल और विश्वसनीय सलाह देते हैं। उपयोगकर्ता एक फसल और उसमें आ रही समस्या के बारे में पूछ रहा है। उन्हें तुरंत, प्राथमिक, और सामान्य निदान और उपचार (quick remedies) प्रदान करें। अपनी प्रतिक्रिया को तीन स्पष्ट भागों में विभाजित करें: 1. संभावित निदान (Probable Diagnosis), 2. त्वरित उपाय (Immediate Remedy) - जो किसान तुरंत कर सकता है, और 3. आगे की सलाह (Next Steps) - जिसमें शिवगौरी एग्रो से संपर्क करने का सुझाव हो। जवाब में सिर्फ़ सलाह शामिल करें, कोई अनावश्यक परिचय या उपसंहार नहीं।";
             
@@ -272,6 +276,7 @@
                     body: JSON.stringify(payload)
                 });
                 if (!response.ok) {
+                    // Throw error to trigger retry logic
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 return response.json();
@@ -299,26 +304,30 @@
                     }
 
                     if (sources.length > 0) {
-                        sourcesHtml += sources.map(s => 
-                            `<a href="${s.uri}" target="_blank" class="text-agro-green hover:underline">${s.title.substring(0, 50)}...</a>`
-                        ).join(', ');
+                        sourcesHtml += sources.map((s, index) => 
+                            `<a href="${s.uri}" target="_blank" class="text-agro-green hover:underline font-medium">${index + 1}. ${s.title.substring(0, 50)}...</a>`
+                        ).join(' | ');
                         aiSourcesDiv.innerHTML = sourcesHtml;
                     } else {
                         aiSourcesDiv.textContent = 'कोई बाहरी स्रोत नहीं मिला।';
                     }
 
                 } else {
-                    aiResponseDiv.textContent = 'क्षमा करें, AI विशेषज्ञ इस समस्या का निदान नहीं कर पाया। कृपया हमें सीधे कॉल करें।';
+                    // Handle case where API succeeds but returns no text content
+                    aiResponseDiv.textContent = 'क्षमा करें, AI विशेषज्ञ इस समस्या का निदान नहीं कर पाया या जवाब फ़िल्टर हो गया। कृपया हमें सीधे कॉल करें।';
                     aiSourcesDiv.textContent = '';
                 }
 
                 aiResultContainer.classList.remove('hidden');
 
             } catch (error) {
-                aiResponseDiv.textContent = 'सलाह जनरेट करते समय एक त्रुटि हुई। कृपया थोड़ी देर बाद पुनः प्रयास करें या हमें सीधे कॉल करें।';
+                // Handle total failure after retries
+                aiResponseDiv.textContent = '❌ सलाह जनरेट करते समय एक गंभीर त्रुटि हुई। कृपया थोड़ी देर बाद पुनः प्रयास करें या हमें सीधे कॉल करें।';
                 aiSourcesDiv.textContent = '';
                 aiResultContainer.classList.remove('hidden');
+                console.error("AI Generation Critical Error:", error);
             } finally {
+                // Ensure UI is restored regardless of success or failure
                 adviceButton.disabled = false;
                 loadingIcon.classList.add('hidden');
             }
